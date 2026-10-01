@@ -257,7 +257,7 @@ export const ReceiveModal: React.FC<ReceiveModalProps> = ({ user, language, onCl
                   </label>
                   <input
                     type="text"
-                    placeholder={isAr ? 'مثال: حساب فطور / قطة المشوار' : 'e.g., Breakfast split / Shared ride'}
+                    placeholder={isAr ? 'مثال: مصاريف مشتركة / سداد مستحقات' : 'e.g., Shared expense / Payment settlement'}
                     value={requestNote}
                     onChange={(e) => setRequestNote(e.target.value)}
                     className="w-full h-10 px-3 rounded-xl border-2 border-black bg-amber-100 font-bold text-xs text-black focus:outline-none focus:bg-white"
