@@ -1,0 +1,6 @@
+{
+  "name": "ساهل — SAHEL Mobile Banking Prototype",
+  "description": "نموذج تجريبي عالي الدقة لتطبيق الدفع الرقمي والخدمات المصرفية عبر الهاتف في السودان (ساهل — قروشك أقرب وأسهل)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
