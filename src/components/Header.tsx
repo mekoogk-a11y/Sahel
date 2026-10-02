@@ -1,5 +1,17 @@
-import React from 'react';
-import { Smartphone, Monitor, Globe, RotateCcw, ShieldCheck, ShieldAlert, LayoutDashboard, User } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import {
+  Smartphone,
+  Monitor,
+  Globe,
+  RotateCcw,
+  ShieldCheck,
+  ShieldAlert,
+  LayoutDashboard,
+  User,
+  KeyRound,
+  LogOut,
+  Lock,
+} from 'lucide-react';
 import { AppView, Language } from '../types';
 
 interface HeaderProps {
@@ -9,6 +21,9 @@ interface HeaderProps {
   setAppView: (view: AppView) => void;
   isDeviceMode: boolean;
   setIsDeviceMode: (mode: boolean) => void;
+  isDesignerAuthenticated: boolean;
+  onTriggerDesignerAuth: () => void;
+  onDesignerLogout: () => void;
   onResetData: () => void;
   onOpenSecurity: () => void;
   pendingRefundCount: number;
@@ -21,11 +36,35 @@ export const Header: React.FC<HeaderProps> = ({
   setAppView,
   isDeviceMode,
   setIsDeviceMode,
+  isDesignerAuthenticated,
+  onTriggerDesignerAuth,
+  onDesignerLogout,
   onResetData,
   onOpenSecurity,
   pendingRefundCount,
 }) => {
   const isAr = language === 'ar';
+
+  // Secret Logo Multi-Tap Trigger for App Designer (5 taps within 3 seconds)
+  const [tapCount, setTapCount] = useState(0);
+  const lastTapTimeRef = useRef<number>(0);
+
+  const handleLogoTap = () => {
+    const now = Date.now();
+    if (now - lastTapTimeRef.current > 3000) {
+      // Reset if too slow
+      setTapCount(1);
+    } else {
+      const newCount = tapCount + 1;
+      setTapCount(newCount);
+      if (newCount >= 5) {
+        setTapCount(0);
+        onTriggerDesignerAuth();
+        return;
+      }
+    }
+    lastTapTimeRef.current = now;
+  };
 
   return (
     <header className="w-full bg-amber-400 border-b-2 border-black sticky top-0 z-30 shadow-xs">
@@ -43,9 +82,13 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Main App Navigation Bar */}
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        {/* Brand Zone */}
+        {/* Brand Zone with Secret Designer Tap Gesture on Logo */}
         <div className="flex items-center gap-3 select-none">
-          <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center font-black text-amber-400 text-2xl shadow-xs border-2 border-black">
+          <div
+            onClick={handleLogoTap}
+            className="w-10 h-10 rounded-xl bg-black flex items-center justify-center font-black text-amber-400 text-2xl shadow-xs border-2 border-black cursor-pointer active:scale-90 transition-transform"
+            title={isAr ? 'تطبيق ساهل' : 'SAHEL'}
+          >
             س
           </div>
           <div>
@@ -61,29 +104,37 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Admin / User View Mode Toggle */}
-          <button
-            type="button"
-            onClick={() => setAppView(appView === 'user' ? 'admin' : 'user')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs transition-all cursor-pointer shadow-xs active:scale-95 ${
-              appView === 'admin'
-                ? 'bg-black text-amber-400'
-                : 'bg-white text-black hover:bg-stone-100'
-            }`}
-            title={isAr ? 'التبديل إلى لوحة الإدارة' : 'Switch to Admin Portal'}
-          >
-            {appView === 'admin' ? (
-              <>
-                <User className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">{isAr ? 'واجهة العميل' : 'Client App'}</span>
-              </>
-            ) : (
-              <>
-                <LayoutDashboard className="w-3.5 h-3.5 text-black" />
-                <span className="hidden sm:inline">{isAr ? 'لوحة الإدارة' : 'Admin Portal'}</span>
-              </>
-            )}
-          </button>
+          {/* ONLY SHOW ADMIN BUTTON IF DESIGNER IS AUTHENTICATED */}
+          {isDesignerAuthenticated ? (
+            <div className="flex items-center gap-1.5 bg-black p-1 rounded-2xl border-2 border-black">
+              {/* Toggle View */}
+              <button
+                type="button"
+                onClick={() => setAppView(appView === 'user' ? 'admin' : 'user')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer shadow-xs active:scale-95 ${
+                  appView === 'admin'
+                    ? 'bg-amber-400 text-black'
+                    : 'bg-stone-800 text-amber-300 hover:bg-stone-700'
+                }`}
+                title={isAr ? 'لوحة تحكم مصمم التطبيق' : 'Designer Control Panel'}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {appView === 'admin' ? (isAr ? 'واجهة العميل' : 'Client View') : (isAr ? 'لوحة المصمم' : 'Designer Panel')}
+                </span>
+              </button>
+
+              {/* Quick Lock & Logout */}
+              <button
+                type="button"
+                onClick={onDesignerLogout}
+                className="p-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white cursor-pointer transition-colors"
+                title={isAr ? 'قفل لوحة المصمم وخروج' : 'Lock & Exit'}
+              >
+                <Lock className="w-3.5 h-3.5 text-white" />
+              </button>
+            </div>
+          ) : null}
 
           {/* Security Center Link */}
           <button

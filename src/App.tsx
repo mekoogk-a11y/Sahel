@@ -14,6 +14,10 @@ import { ReviewIncomingRefundModal } from './components/ReviewIncomingRefundModa
 import { ReportTransactionModal } from './components/ReportTransactionModal';
 import { SecurityModal } from './components/SecurityModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { VirtualVisaScreen } from './components/VirtualVisaScreen';
+import { IssueVisaModal } from './components/IssueVisaModal';
+import { TopUpVisaModal } from './components/TopUpVisaModal';
+import { DesignerAuthModal } from './components/DesignerAuthModal';
 
 import {
   ActionModalType,
@@ -29,6 +33,9 @@ import {
   TelecomProvider,
   Transaction,
   UserAccount,
+  VirtualVisaCard,
+  VisaTransaction,
+  Subscriber,
 } from './types';
 
 import {
@@ -39,19 +46,43 @@ import {
   INITIAL_SYSTEM_SETTINGS,
   INITIAL_TRANSACTIONS,
   INITIAL_USER,
+  INITIAL_VISA_CARD,
+  INITIAL_VISA_TRANSACTIONS,
+  INITIAL_SUBSCRIBERS,
 } from './data/mockData';
 
-export function App() {
+export default function App() {
   const [language, setLanguage] = useState<Language>('ar');
   const [appView, setAppView] = useState<AppView>('user');
   const [currentTab, setCurrentTab] = useState<TabType>('home');
   const [activeModal, setActiveModal] = useState<ActionModalType>(null);
   const [isDeviceMode, setIsDeviceMode] = useState<boolean>(false);
 
+  // Creator & Designer Secret Access State (Restricted to App Creator Only)
+  const [isDesignerAuthenticated, setIsDesignerAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('sahel_designer_auth') === 'true';
+  });
+  const [isDesignerAuthModalOpen, setIsDesignerAuthModalOpen] = useState<boolean>(false);
+
   // Application Data States
   const [user, setUser] = useState<UserAccount>(() => {
     const saved = localStorage.getItem('sahel_user');
     return saved ? JSON.parse(saved) : INITIAL_USER;
+  });
+
+  const [subscribers, setSubscribers] = useState<Subscriber[]>(() => {
+    const saved = localStorage.getItem('sahel_subscribers');
+    return saved ? JSON.parse(saved) : INITIAL_SUBSCRIBERS;
+  });
+
+  const [visaCard, setVisaCard] = useState<VirtualVisaCard | null>(() => {
+    const saved = localStorage.getItem('sahel_visa_card');
+    return saved ? JSON.parse(saved) : INITIAL_VISA_CARD;
+  });
+
+  const [visaTransactions, setVisaTransactions] = useState<VisaTransaction[]>(() => {
+    const saved = localStorage.getItem('sahel_visa_transactions');
+    return saved ? JSON.parse(saved) : INITIAL_VISA_TRANSACTIONS;
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -81,7 +112,20 @@ export function App() {
 
   const [systemSettings, setSystemSettings] = useState<SystemSettings>(() => {
     const saved = localStorage.getItem('sahel_settings');
-    return saved ? JSON.parse(saved) : INITIAL_SYSTEM_SETTINGS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_SYSTEM_SETTINGS,
+          ...parsed,
+          usdExchangeRate: parsed.usdExchangeRate || INITIAL_SYSTEM_SETTINGS.usdExchangeRate || 2650,
+          visaIssuanceFeeSdg: parsed.visaIssuanceFeeSdg ?? INITIAL_SYSTEM_SETTINGS.visaIssuanceFeeSdg ?? 0,
+        };
+      } catch {
+        return INITIAL_SYSTEM_SETTINGS;
+      }
+    }
+    return INITIAL_SYSTEM_SETTINGS;
   });
 
   // Modal Specific State Holders
@@ -112,8 +156,33 @@ export function App() {
   }, [auditLogs]);
 
   useEffect(() => {
+    localStorage.setItem('sahel_visa_card', JSON.stringify(visaCard));
+  }, [visaCard]);
+
+  useEffect(() => {
+    localStorage.setItem('sahel_visa_transactions', JSON.stringify(visaTransactions));
+  }, [visaTransactions]);
+
+  useEffect(() => {
+    localStorage.setItem('sahel_subscribers', JSON.stringify(subscribers));
+  }, [subscribers]);
+
+  useEffect(() => {
     localStorage.setItem('sahel_settings', JSON.stringify(systemSettings));
   }, [systemSettings]);
+
+  // Listen to secret developer hash triggers (#designer or #creator)
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#designer' || hash === '#creator' || hash === '#admin') {
+        setIsDesignerAuthModalOpen(true);
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // Adjust document direction according to language
   useEffect(() => {
@@ -548,16 +617,181 @@ export function App() {
     }
   };
 
-  // 11. Reset Prototype Data
+  // 11. VIRTUAL VISA: Issue Card Online Handler
+  const handleCardIssued = (
+    newCard: VirtualVisaCard,
+    initialAmountUsd: number,
+    totalDeductedSdg: number
+  ) => {
+    setVisaCard(newCard);
+
+    // Deduct from Sahel balance
+    setUser((prev) => ({
+      ...prev,
+      balance: Math.max(0, prev.balance - totalDeductedSdg),
+      dailyUsed: prev.dailyUsed + totalDeductedSdg,
+    }));
+
+    // Record in central transaction ledger
+    const visaIssueTx: Transaction = {
+      id: `tx-visa-${Date.now()}`,
+      referenceNo: `VIS-${Math.floor(1000 + Math.random() * 9000)}-SD`,
+      type: 'visa_issue',
+      title: `إصدار بطاقة فيزا افتراضية وتغذية رصيد ($${initialAmountUsd.toFixed(2)} USD)`,
+      titleEn: `Virtual Visa Issuance & Funding ($${initialAmountUsd.toFixed(2)} USD)`,
+      recipientName: 'شبكة فيزا العالمية (Visa Inc)',
+      recipientAccount: newCard.cardNumber,
+      recipientPhone: user.phoneNumber,
+      senderName: user.name,
+      senderAccount: user.accountNumber,
+      senderPhone: user.phoneNumber,
+      amount: -totalDeductedSdg,
+      fee: 0,
+      date: language === 'ar' ? 'اليوم' : 'Today',
+      time: new Date().toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      timestamp: Date.now(),
+      status: 'completed',
+      category: 'visa',
+      note: `إصدار رسمي رقم: ${newCard.certificateNumber}`,
+      refundStatus: 'none',
+    };
+
+    setTransactions((prev) => [visaIssueTx, ...prev]);
+
+    logAuditEvent(
+      `إصدار بطاقة فيزا افتراضية رسمية معتمدة ($${initialAmountUsd} USD)`,
+      `Issued official Virtual Visa Card ($${initialAmountUsd} USD)`,
+      newCard.cardNumber,
+      `شهادة اعتماد رقم ${newCard.certificateNumber}`
+    );
+  };
+
+  // 12. VIRTUAL VISA: Top Up Handler
+  const handleTopUpVisa = (amountUsd: number, amountSdg: number) => {
+    if (!visaCard) return;
+
+    setVisaCard((prev) => (prev ? { ...prev, balanceUsd: prev.balanceUsd + amountUsd } : null));
+
+    setUser((prev) => ({
+      ...prev,
+      balance: Math.max(0, prev.balance - amountSdg),
+      dailyUsed: prev.dailyUsed + amountSdg,
+    }));
+
+    const topUpTx: Transaction = {
+      id: `tx-visatop-${Date.now()}`,
+      referenceNo: `VTP-${Math.floor(1000 + Math.random() * 9000)}-SD`,
+      type: 'visa_topup',
+      title: `شحن رصيد بطاقة فيزا الافتراضية ($${amountUsd.toFixed(2)} USD)`,
+      titleEn: `Virtual Visa Top-up ($${amountUsd.toFixed(2)} USD)`,
+      recipientName: 'بطاقة فيزا ساهل الافتراضية',
+      recipientAccount: visaCard.cardNumber,
+      recipientPhone: user.phoneNumber,
+      senderName: user.name,
+      senderAccount: user.accountNumber,
+      senderPhone: user.phoneNumber,
+      amount: -amountSdg,
+      fee: 0,
+      date: language === 'ar' ? 'اليوم' : 'Today',
+      time: new Date().toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      timestamp: Date.now(),
+      status: 'completed',
+      category: 'visa',
+      note: `تغذية رصيد البطاقة بمبلغ ${amountUsd} دولار`,
+      refundStatus: 'none',
+    };
+
+    setTransactions((prev) => [topUpTx, ...prev]);
+
+    logAuditEvent(
+      `شحن رصيد بطاقة فيزا بمبلغ $${amountUsd} USD`,
+      `Funded Virtual Visa card with $${amountUsd} USD`,
+      visaCard.cardNumber,
+      `تم خصم ${amountSdg.toLocaleString('en-US')} ج.س من حساب ساهل`
+    );
+  };
+
+  // 13. VIRTUAL VISA: Toggle Freeze Card
+  const handleToggleFreezeCard = () => {
+    if (!visaCard) return;
+    const newStatus = visaCard.status === 'active' ? 'frozen' : 'active';
+    setVisaCard((prev) => (prev ? { ...prev, status: newStatus } : null));
+
+    const actionTextAr = newStatus === 'frozen' ? 'تجميد بطاقة فيزا مؤقتاً' : 'إلغاء تجميد بطاقة فيزا';
+    const actionTextEn = newStatus === 'frozen' ? 'Freeze Visa Card' : 'Unfreeze Visa Card';
+
+    logAuditEvent(actionTextAr, actionTextEn, visaCard.cardNumber, `تم تغيير حالة البطاقة إلى ${newStatus}`);
+  };
+
+  // 14. VIRTUAL VISA: Update Settings
+  const handleUpdateCardSettings = (settings: Partial<VirtualVisaCard>) => {
+    if (!visaCard) return;
+    setVisaCard((prev) => (prev ? { ...prev, ...settings } : null));
+    logAuditEvent('تحديث ضوابط وسقف بطاقة فيزا', 'Updated Visa card controls', visaCard.cardNumber, 'تعديل سقف الإنفاق أو خيارات الشراء');
+  };
+
+  // 15. Creator & Designer Control Handlers
+  const handleToggleSubscriberLock = (accountNumber: string) => {
+    setSubscribers((prev) =>
+      prev.map((s) => {
+        if (s.accountNumber === accountNumber) {
+          const newStatus = s.status === 'active' ? 'frozen' : 'active';
+          return { ...s, status: newStatus };
+        }
+        return s;
+      })
+    );
+    if (user.accountNumber === accountNumber) {
+      setUser((prev) => ({
+        ...prev,
+        status: prev.status === 'active' ? 'frozen' : 'active',
+      }));
+    }
+  };
+
+  const handleChangeMasterPin = (newPin: string) => {
+    setSystemSettings((prev) => ({ ...prev, designerMasterPin: newPin }));
+    logAuditEvent('تغيير الرمز السري لمصمم التطبيق', 'Updated Creator Master PIN', 'SECURITY', 'تم تعيين رمز مرور جديد للوحة التحكم');
+  };
+
+  const handleDesignerLogout = () => {
+    setIsDesignerAuthenticated(false);
+    sessionStorage.removeItem('sahel_designer_auth');
+    setAppView('user');
+    logAuditEvent('تسجيل خروج وقفل لوحة المصمم', 'Designer Dashboard Locked', 'SECURITY', 'تم تأمين اللوحة وقفل الوصول التام');
+  };
+
+  const handleDesignerAuthSuccess = () => {
+    setIsDesignerAuthenticated(true);
+    sessionStorage.setItem('sahel_designer_auth', 'true');
+    setIsDesignerAuthModalOpen(false);
+    setAppView('admin');
+    logAuditEvent('دخول ناجح للوحة تحكم المصمم', 'Designer Dashboard Authenticated', 'SECURITY', 'تم تأكيد الرمز السري لمصمم النظام');
+  };
+
+  // 16. Reset Prototype Data
   const handleResetData = () => {
     localStorage.clear();
+    sessionStorage.clear();
     setUser(INITIAL_USER);
+    setSubscribers(INITIAL_SUBSCRIBERS);
+    setVisaCard(INITIAL_VISA_CARD);
+    setVisaTransactions(INITIAL_VISA_TRANSACTIONS);
     setTransactions(INITIAL_TRANSACTIONS);
     setBeneficiaries(INITIAL_BENEFICIARIES);
     setRefundRequests(INITIAL_REFUND_REQUESTS);
     setComplaints(INITIAL_COMPLAINT_TICKETS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
     setSystemSettings(INITIAL_SYSTEM_SETTINGS);
+    setIsDesignerAuthenticated(false);
+    setIsDesignerAuthModalOpen(false);
+    setAppView('user');
     setActiveModal(null);
     setSelectedTransaction(null);
     setSelectedRefundForReview(null);
@@ -581,9 +815,18 @@ export function App() {
         language={language}
         setLanguage={setLanguage}
         appView={appView}
-        setAppView={setAppView}
+        setAppView={(view) => {
+          if (view === 'admin' && !isDesignerAuthenticated) {
+            setIsDesignerAuthModalOpen(true);
+          } else {
+            setAppView(view);
+          }
+        }}
         isDeviceMode={isDeviceMode}
         setIsDeviceMode={setIsDeviceMode}
+        isDesignerAuthenticated={isDesignerAuthenticated}
+        onTriggerDesignerAuth={() => setIsDesignerAuthModalOpen(true)}
+        onDesignerLogout={handleDesignerLogout}
         onResetData={handleResetData}
         onOpenSecurity={() => setActiveModal('security')}
         pendingRefundCount={incomingPendingRefunds.length}
@@ -598,11 +841,12 @@ export function App() {
               : 'max-w-2xl'
           }`}
         >
-          {/* VIEW ROUTING: USER APP vs. ADMIN DASHBOARD */}
-          {appView === 'admin' ? (
+          {/* VIEW ROUTING: USER APP vs. DESIGNER RESTRICTED DASHBOARD */}
+          {appView === 'admin' && isDesignerAuthenticated ? (
             <AdminDashboard
               language={language}
               user={user}
+              subscribers={subscribers}
               transactions={transactions}
               refundRequests={refundRequests}
               complaints={complaints}
@@ -610,9 +854,10 @@ export function App() {
               systemSettings={systemSettings}
               onUpdateComplaintStatus={handleAdminUpdateComplaint}
               onUpdateSystemSettings={(st) => setSystemSettings((prev) => ({ ...prev, ...st }))}
-              onToggleAccountLock={handleToggleAccountLock}
+              onToggleSubscriberLock={handleToggleSubscriberLock}
               onAddAuditLog={(ar, en, tgt, dt) => logAuditEvent(ar, en, tgt, dt)}
               onCloseAdmin={() => setAppView('user')}
+              onLockDashboardAndExit={handleDesignerLogout}
             />
           ) : (
             <>
@@ -622,6 +867,7 @@ export function App() {
                   user={user}
                   recentTransactions={transactions}
                   pendingIncomingRefunds={incomingPendingRefunds}
+                  visaCard={visaCard}
                   language={language}
                   onOpenAction={(action) => {
                     if (action === 'send') setActiveModal('send');
@@ -629,13 +875,29 @@ export function App() {
                     else if (action === 'recharge') setActiveModal('recharge');
                     else if (action === 'bills') setActiveModal('bills');
                   }}
+                  onOpenVisa={() => setCurrentTab('visa')}
                   onViewAllTransactions={() => setCurrentTab('transactions')}
                   onSelectTransaction={(tx) => setSelectedTransaction(tx)}
                   onOpenRefundReview={(refReq) => setSelectedRefundForReview(refReq)}
                 />
               )}
 
-              {/* TAB 2: TRANSACTIONS HISTORY */}
+              {/* TAB 2: VIRTUAL VISA CARD */}
+              {currentTab === 'visa' && (
+                <VirtualVisaScreen
+                  card={visaCard}
+                  user={user}
+                  transactions={visaTransactions}
+                  exchangeRate={systemSettings.usdExchangeRate || 2650}
+                  language={language}
+                  onOpenIssueModal={() => setActiveModal('visaIssue')}
+                  onOpenTopUpModal={() => setActiveModal('visaTopUp')}
+                  onToggleFreezeCard={handleToggleFreezeCard}
+                  onUpdateCardSettings={handleUpdateCardSettings}
+                />
+              )}
+
+              {/* TAB 3: TRANSACTIONS HISTORY */}
               {currentTab === 'transactions' && (
                 <TransactionsScreen
                   transactions={transactions}
@@ -653,7 +915,7 @@ export function App() {
                 />
               )}
 
-              {/* TAB 3: MOBILE RECHARGE */}
+              {/* TAB 4: MOBILE RECHARGE */}
               {currentTab === 'recharge' && (
                 <div className="space-y-4">
                   <div className="bg-amber-300 rounded-3xl p-5 border-2 border-black space-y-2">
@@ -674,7 +936,7 @@ export function App() {
                 </div>
               )}
 
-              {/* TAB 4: BILL PAYMENTS */}
+              {/* TAB 5: BILL PAYMENTS */}
               {currentTab === 'bills' && (
                 <div className="space-y-4">
                   <div className="bg-amber-300 rounded-3xl p-5 border-2 border-black space-y-2">
@@ -695,7 +957,7 @@ export function App() {
                 </div>
               )}
 
-              {/* TAB 5: SUPPORT & COMPLAINTS */}
+              {/* TAB 6: SUPPORT & COMPLAINTS */}
               {currentTab === 'support' && (
                 <SupportDisputesView
                   complaints={complaints}
@@ -704,13 +966,14 @@ export function App() {
                 />
               )}
 
-              {/* TAB 6: ACCOUNT / PROFILE */}
+              {/* TAB 7: ACCOUNT / PROFILE */}
               {currentTab === 'account' && (
                 <AccountScreen
                   user={user}
                   language={language}
                   onUpdateUser={(updated) => setUser((prev) => ({ ...prev, ...updated }))}
                   onResetData={handleResetData}
+                  onTriggerDesignerAuth={() => setIsDesignerAuthModalOpen(true)}
                 />
               )}
 
@@ -832,6 +1095,40 @@ export function App() {
           onClose={() => setActiveModal(null)}
         />
       )}
+
+      {/* 9. Issue Virtual Visa Card Modal */}
+      {activeModal === 'visaIssue' && (
+        <IssueVisaModal
+          user={user}
+          language={language}
+          exchangeRate={systemSettings.usdExchangeRate || 2650}
+          issuanceFeeSdg={systemSettings.visaIssuanceFeeSdg ?? 0}
+          onClose={() => setActiveModal(null)}
+          onCardIssued={handleCardIssued}
+        />
+      )}
+
+      {/* 10. Top Up Virtual Visa Card Modal */}
+      {activeModal === 'visaTopUp' && visaCard && (
+        <TopUpVisaModal
+          card={visaCard}
+          user={user}
+          language={language}
+          exchangeRate={systemSettings.usdExchangeRate || 2650}
+          onClose={() => setActiveModal(null)}
+          onConfirmTopUp={handleTopUpVisa}
+        />
+      )}
+
+      {/* 11. Secret App Designer Restricted Authentication Modal */}
+      <DesignerAuthModal
+        language={language}
+        masterPin={systemSettings.designerMasterPin || '7788'}
+        isOpen={isDesignerAuthModalOpen}
+        onClose={() => setIsDesignerAuthModalOpen(false)}
+        onSuccess={handleDesignerAuthSuccess}
+        onChangeMasterPin={handleChangeMasterPin}
+      />
     </div>
   );
 }

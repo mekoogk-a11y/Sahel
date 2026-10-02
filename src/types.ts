@@ -7,6 +7,7 @@ export type TabType =
   | 'transactions' 
   | 'recharge' 
   | 'bills' 
+  | 'visa' 
   | 'support' 
   | 'account';
 
@@ -16,6 +17,9 @@ export type ActionModalType =
   | 'receive' 
   | 'recharge' 
   | 'bills' 
+  | 'visa' 
+  | 'visaIssue' 
+  | 'visaTopUp' 
   | 'refundRequest' 
   | 'reportDispute' 
   | 'security' 
@@ -37,7 +41,10 @@ export type TransactionType =
   | 'transfer_in' 
   | 'recharge' 
   | 'bill_payment' 
-  | 'refund_reversal';
+  | 'refund_reversal'
+  | 'visa_issue'
+  | 'visa_topup'
+  | 'visa_spend';
 
 export type TransactionStatus = 'completed' | 'pending' | 'reversed' | 'disputed';
 
@@ -61,11 +68,48 @@ export interface Transaction {
   time: string;
   timestamp: number;
   status: TransactionStatus;
-  category: 'transfer' | 'recharge' | 'bill' | 'system';
+  category: 'transfer' | 'recharge' | 'bill' | 'visa' | 'system';
   note?: string;
   refundStatus: RefundStatus;
   refundRequestId?: string;
   disputeId?: string;
+}
+
+export interface VirtualVisaCard {
+  id: string;
+  cardNumber: string; // e.g., "4024 8812 9940 3182"
+  cardholderName: string;
+  expiryMonth: string; // "09"
+  expiryYear: string; // "29"
+  cvv: string; // "742"
+  balanceUsd: number;
+  billingAddress: {
+    country: string;
+    city: string;
+    postalCode: string;
+    street: string;
+  };
+  nationalId: string;
+  passportNumber?: string;
+  status: 'active' | 'frozen' | 'cancelled';
+  monthlyLimitUsd: number;
+  onlinePurchasesEnabled: boolean;
+  internationalPaymentsEnabled: boolean;
+  issuedAt: string;
+  certificateNumber: string;
+}
+
+export interface VisaTransaction {
+  id: string;
+  merchant: string;
+  merchantCategory: string;
+  amountUsd: number;
+  amountSdg: number;
+  date: string;
+  time: string;
+  status: 'completed' | 'pending';
+  referenceNo: string;
+  icon?: string;
 }
 
 export interface RefundRequest {
@@ -167,4 +211,31 @@ export interface SystemSettings {
   allowRefundRequests: boolean;
   maintenanceMode: boolean;
   apiReadiness: boolean;
+  usdExchangeRate: number; // e.g. 2650 SDG per 1 USD
+  visaIssuanceFeeSdg: number; // e.g. 0 or 5000 SDG
+  designerMasterPin: string; // Secret master PIN for app creator/designer (default "7788")
 }
+
+export interface Subscriber {
+  id: string;
+  accountNumber: string;
+  fullName: string;
+  fullNameEn: string;
+  phoneNumber: string;
+  balance: number;
+  joinedDate: string;
+  lastActive: string;
+  city: string;
+  nationalId: string;
+  tier: string;
+  status: 'active' | 'frozen';
+  hasVisaCard: boolean;
+  totalTransfersCount: number;
+  deviceModel: string;
+}
+
+export interface DesignerSession {
+  isAuthenticated: boolean;
+  authenticatedAt?: string;
+}
+

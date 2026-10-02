@@ -6,6 +6,7 @@ import {
   Receipt,
   ShieldAlert,
   User,
+  CreditCard,
 } from 'lucide-react';
 import { Language, TabType } from '../types';
 
@@ -31,13 +32,18 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       icon: Home,
     },
     {
+      id: 'visa',
+      label: isAr ? 'بطاقة فيزا' : 'Visa Card',
+      icon: CreditCard,
+    },
+    {
       id: 'transactions',
       label: isAr ? 'المعاملات' : 'History',
       icon: ArrowRightLeft,
     },
     {
       id: 'recharge',
-      label: isAr ? 'شحن الرصيد' : 'Recharge',
+      label: isAr ? 'الشحن' : 'Recharge',
       icon: Smartphone,
     },
     {
@@ -47,7 +53,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     },
     {
       id: 'support',
-      label: isAr ? 'الدعم والشكاوى' : 'Support',
+      label: isAr ? 'الشكاوى' : 'Support',
       icon: ShieldAlert,
       badge: openDisputesCount,
     },

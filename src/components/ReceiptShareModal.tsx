@@ -109,10 +109,10 @@ export const ReceiptShareModal: React.FC<ReceiptShareModalProps> = ({
             </div>
             <div className="bg-amber-100 p-2.5 rounded-xl border border-black/30 text-xs font-bold text-black flex items-center justify-between">
               <span>{isAr ? 'المستلم:' : 'Recipient:'}</span>
-              <span className="font-black">{transaction.recipientOrSender}</span>
+              <span className="font-black">{transaction.recipientName || transaction.title}</span>
             </div>
             <div className="flex items-center justify-between text-[11px] text-black/80 font-mono font-bold px-1">
-              <span>{transaction.phoneOrAccount}</span>
+              <span>{transaction.recipientAccount || transaction.recipientPhone || 'حساب ساهل'}</span>
               <span>{transaction.referenceNo}</span>
             </div>
           </div>
@@ -220,7 +220,7 @@ export const ReceiptShareModal: React.FC<ReceiptShareModalProps> = ({
               {isAr ? 'معاينة نص الإشعار المشارك:' : 'Receipt Text Preview:'}
             </span>
             <p className="text-[11px] font-mono text-black font-bold whitespace-pre-line leading-relaxed bg-amber-50 p-2.5 rounded-xl border border-black/20 max-h-36 overflow-y-auto">
-              {`🟡 إشعار مالي معتمد — تطبيق ساهل\nالمبلغ: ${Math.abs(transaction.amount).toLocaleString('en-US')} جنيه\nالمستلم: ${transaction.recipientOrSender}\nرقم الحساب: ${transaction.phoneOrAccount}\nالمرجع: ${transaction.referenceNo}\nالتاريخ: ${transaction.date} · ${transaction.time}`}
+              {`🟡 إشعار مالي معتمد — تطبيق ساهل\nالمبلغ: ${Math.abs(transaction.amount).toLocaleString('en-US')} جنيه\nالمستلم: ${transaction.recipientName || transaction.title}\nرقم الحساب: ${transaction.recipientAccount || transaction.recipientPhone || 'حساب ساهل'}\nالمرجع: ${transaction.referenceNo}\nالتاريخ: ${transaction.date} · ${transaction.time}`}
             </p>
           </div>
         </div>

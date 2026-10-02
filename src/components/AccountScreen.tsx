@@ -19,6 +19,7 @@ interface AccountScreenProps {
   language: Language;
   onUpdateUser: (updated: Partial<UserAccount>) => void;
   onResetData: () => void;
+  onTriggerDesignerAuth?: () => void;
 }
 
 export const AccountScreen: React.FC<AccountScreenProps> = ({
@@ -26,9 +27,12 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
   language,
   onUpdateUser,
   onResetData,
+  onTriggerDesignerAuth,
 }) => {
   const isAr = language === 'ar';
-  const remainingLimit = Math.max(0, user.dailyLimit - user.dailyUsed);
+  const dailyLimit = user?.dailyLimit ?? 3000000;
+  const dailyUsed = user?.dailyUsed ?? 0;
+  const remainingLimit = Math.max(0, dailyLimit - dailyUsed);
 
   return (
     <div className="space-y-4 pb-20 text-black">
@@ -82,20 +86,20 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
         <div className="space-y-2 text-xs">
           <div className="flex justify-between font-bold">
             <span className="text-black/80">{isAr ? 'المستخدم اليوم:' : 'Used Today:'}</span>
-            <span className="font-black tabular-nums">{user.dailyUsed.toLocaleString('en-US')} ج.س</span>
+            <span className="font-black tabular-nums">{(dailyUsed ?? 0).toLocaleString('en-US')} ج.س</span>
           </div>
 
           {/* Progress Bar */}
           <div className="w-full h-3 bg-amber-200 rounded-full border border-black/30 overflow-hidden">
             <div
               className="h-full bg-black rounded-full transition-all"
-              style={{ width: `${Math.min(100, (user.dailyUsed / user.dailyLimit) * 100)}%` }}
+              style={{ width: `${Math.min(100, (dailyUsed / (dailyLimit || 1)) * 100)}%` }}
             />
           </div>
 
           <div className="flex justify-between font-bold text-[11px] text-black/80">
-            <span>{isAr ? 'المتبقي لليوم:' : 'Remaining:'} {remainingLimit.toLocaleString('en-US')} ج.س</span>
-            <span>{isAr ? 'السقف:' : 'Cap:'} {user.dailyLimit.toLocaleString('en-US')} ج.س</span>
+            <span>{isAr ? 'المتبقي لليوم:' : 'Remaining:'} {(remainingLimit ?? 0).toLocaleString('en-US')} ج.س</span>
+            <span>{isAr ? 'السقف:' : 'Cap:'} {(dailyLimit ?? 3000000).toLocaleString('en-US')} ج.س</span>
           </div>
         </div>
       </div>
@@ -173,6 +177,20 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
         <RotateCcw className="w-4 h-4 text-black" />
         <span>{isAr ? 'إعادة ضبط البيانات التجريبية للمشروع' : 'Reset Prototype Demo Data'}</span>
       </button>
+
+      {/* Discreet Developer / Creator Gate */}
+      {onTriggerDesignerAuth && (
+        <div className="text-center pt-2 pb-2">
+          <button
+            type="button"
+            onClick={onTriggerDesignerAuth}
+            className="text-[10px] text-black/40 hover:text-black font-mono transition-colors cursor-pointer select-none"
+            title={isAr ? 'بوابة المطور ومصمم النظام' : 'Developer & Creator Master Gate'}
+          >
+            SAHEL Core Engine · v1.4.2 (Restricted)
+          </button>
+        </div>
+      )}
     </div>
   );
 };

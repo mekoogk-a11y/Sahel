@@ -9,21 +9,24 @@ export function getFormattedReceiptText(tx: Transaction, isAr: boolean): string 
   const statusLabel = isAr ? 'ناجحة ومكتملة ✓' : 'Completed Successfully ✓';
   const currencyLabel = isAr ? 'جنيه سوداني' : 'SDG';
 
+  const recipientDisplay = tx.recipientName || tx.title;
+  const accountDisplay = tx.recipientAccount || tx.recipientPhone || 'حساب ساهل';
+
   if (isAr) {
     return (
 `🟡 *إشعار مالي معتمد — تطبيق ساهل*
 ━━━━━━━━━━━━━━━━━━
 📌 *نوع العملية:* ${typeLabel}
 💰 *المبلغ:* ${amountFormatted} ${currencyLabel}
-👤 *المستلم / صاحب الحساب:* ${tx.recipientOrSender}
-🔢 *رقم الحساب:* ${tx.phoneOrAccount || 'حساب ساهل'}
+👤 *المستلم / صاحب الحساب:* ${recipientDisplay}
+🔢 *رقم الحساب:* ${accountDisplay}
 🏷️ *رقم الإشعار المرجعي:* ${tx.referenceNo}
 ⏱️ *التاريخ والوقت:* ${tx.date} · ${tx.time}
 ✨ *الرسوم المصرفية:* 0 جنيه (مجاناً)
 🟢 *حالة العملية:* ${statusLabel}
 ━━━━━━━━━━━━━━━━━━
-⚡ *ساهل — قروشك أقرب وأسهل*
-_ملاحظة: هذا التطبيق لا يتبع لأي بنك، هو مجرد فكرة_`
+⚡ *ساهل — أموالك أقرب وأسهل*
+_ملاحظة: هذا التطبيق نموذج أولي تجريبي (Prototype)_`
     );
   }
 
@@ -32,14 +35,14 @@ _ملاحظة: هذا التطبيق لا يتبع لأي بنك، هو مجرد
 ━━━━━━━━━━━━━━━━━━
 📌 *Type:* ${typeLabel}
 💰 *Amount:* ${amountFormatted} ${currencyLabel}
-👤 *Account Owner / Recipient:* ${tx.recipientOrSender}
-🔢 *Account ID:* ${tx.phoneOrAccount || 'SAHEL Account'}
+👤 *Account Owner / Recipient:* ${recipientDisplay}
+🔢 *Account ID:* ${accountDisplay}
 🏷️ *Reference No:* ${tx.referenceNo}
 ⏱️ *Date & Time:* ${tx.date} · ${tx.time}
 ✨ *Bank Fee:* 0 SDG (Free)
 🟢 *Status:* ${statusLabel}
 ━━━━━━━━━━━━━━━━━━
-⚡ *SAHEL — Simpler, Closer Financials*
+⚡ *SAHEL — Your Money Closer & Easier*
 _Note: Demonstration prototype only_`
   );
 }
@@ -179,11 +182,11 @@ export function downloadReceiptAsImage(tx: Transaction, isAr: boolean): Promise<
         },
         {
           label: isAr ? 'صاحب الحساب المستلم' : 'Recipient Name',
-          value: tx.recipientOrSender,
+          value: tx.recipientName || tx.title,
         },
         {
           label: isAr ? 'رقم الحساب' : 'Account Number',
-          value: tx.phoneOrAccount || 'SH-992011',
+          value: tx.recipientAccount || tx.recipientPhone || 'SH-992011',
         },
         {
           label: isAr ? 'رقم الإشعار المرجعي' : 'Reference Number',

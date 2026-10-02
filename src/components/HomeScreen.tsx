@@ -12,15 +12,19 @@ import {
   AlertCircle,
   ShieldCheck,
   RotateCcw,
+  CreditCard,
+  Globe,
 } from 'lucide-react';
-import { Language, RefundRequest, Transaction, UserAccount } from '../types';
+import { Language, RefundRequest, Transaction, UserAccount, VirtualVisaCard } from '../types';
 
 interface HomeScreenProps {
   user: UserAccount;
   recentTransactions: Transaction[];
   pendingIncomingRefunds: RefundRequest[];
+  visaCard: VirtualVisaCard | null;
   language: Language;
   onOpenAction: (action: 'send' | 'receive' | 'recharge' | 'bills') => void;
+  onOpenVisa: () => void;
   onViewAllTransactions: () => void;
   onSelectTransaction: (transaction: Transaction) => void;
   onOpenRefundReview: (refund: RefundRequest) => void;
@@ -30,8 +34,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   user,
   recentTransactions,
   pendingIncomingRefunds,
+  visaCard,
   language,
   onOpenAction,
+  onOpenVisa,
   onViewAllTransactions,
   onSelectTransaction,
   onOpenRefundReview,
@@ -198,6 +204,48 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               {isAr ? 'دفع الفواتير' : 'Pay Bills'}
             </span>
           </button>
+        </div>
+      </section>
+
+      {/* VIRTUAL VISA CARD SECTION (بطاقة فيزا ساهل الافتراضية) */}
+      <section>
+        <div
+          onClick={onOpenVisa}
+          className="bg-stone-950 text-amber-400 rounded-3xl p-5 border-2 border-black shadow-md cursor-pointer hover:bg-black transition-all active:scale-[0.99] relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-400 text-black flex items-center justify-center font-black">
+                <CreditCard className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-amber-300">
+                    {isAr ? 'بطاقة فيزا الافتراضية' : 'Virtual Visa Card'}
+                  </span>
+                  <span className="text-[10px] bg-amber-400 text-black px-2 py-0.5 rounded font-black">
+                    {isAr ? 'إجراءات رسمية' : 'Official'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-white/80 font-bold mt-0.5">
+                  {isAr ? 'شراء وتسوق عبر الإنترنت والاشتراكات العالمية' : 'Online shopping, Google, Netflix & global stores'}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-end">
+              <span className="text-lg font-black italic tracking-tighter text-white block">VISA</span>
+              {visaCard ? (
+                <span className="text-xs font-mono font-black text-amber-300 tabular-nums block">
+                  ${visaCard.balanceUsd.toFixed(2)} USD
+                </span>
+              ) : (
+                <span className="text-[11px] text-amber-400 font-bold underline block">
+                  {isAr ? 'إصدار الآن' : 'Issue Now'}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
