@@ -222,7 +222,7 @@ export const VirtualVisaScreen: React.FC<VirtualVisaScreenProps> = ({
                 </div>
               </div>
 
-              <p className="text-lg sm:text-2xl font-mono font-black tracking-widest text-amber-200 mt-0.5 select-all">
+              <p className="text-base sm:text-xl font-mono font-black tracking-wider sm:tracking-widest text-amber-200 mt-0.5 select-all">
                 {showFullPan ? card.cardNumber : `•••• •••• •••• ${card.cardNumber.slice(-4)}`}
               </p>
             </div>

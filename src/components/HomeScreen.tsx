@@ -91,74 +91,74 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       )}
 
       {/* 1. BALANCE CARD (YOUR BALANCE / رصيدك) */}
-      <section className="bg-amber-300 rounded-3xl p-6 border-2 border-black shadow-sm relative overflow-hidden">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-extrabold text-black/80 tracking-wide uppercase">
-            {isAr ? 'رصيدك' : 'Your Balance'}
+      <section className="bg-amber-300 rounded-3xl p-5 sm:p-6 border-2 border-black shadow-sm relative overflow-hidden">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs sm:text-sm font-extrabold text-black/80 tracking-wide uppercase">
+            {isAr ? 'رصيدك المتاح' : 'Available Balance'}
           </span>
           <button
             type="button"
             onClick={() => setShowBalance(!showBalance)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-black/30 hover:border-black bg-amber-200/80 text-black text-xs font-black cursor-pointer transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-black/30 hover:border-black bg-amber-200/80 text-black text-xs font-black cursor-pointer transition-colors active:scale-95"
             title={showBalance ? (isAr ? 'إخفاء الرصيد' : 'Hide Balance') : (isAr ? 'إظهار الرصيد' : 'Show Balance')}
           >
             {showBalance ? (
               <>
-                <EyeOff className="w-4 h-4 text-black" />
+                <EyeOff className="w-3.5 h-3.5 text-black" />
                 <span>{isAr ? 'إخفاء' : 'Hide'}</span>
               </>
             ) : (
               <>
-                <Eye className="w-4 h-4 text-black" />
+                <Eye className="w-3.5 h-3.5 text-black" />
                 <span>{isAr ? 'إظهار' : 'Show'}</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Large Amount Display */}
-        <div className="flex items-baseline gap-2 py-1">
+        {/* Large Amount Display with Mobile Word Wrapping */}
+        <div className="flex flex-wrap items-baseline gap-1.5 py-1">
           {showBalance ? (
             <>
-              <span className="text-4xl sm:text-5xl font-black tracking-tight text-black tabular-nums">
-                {user.balance.toLocaleString('en-US')}
+              <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-black tabular-nums break-all leading-none">
+                {(user.balance ?? 0).toLocaleString('en-US')}
               </span>
-              <span className="text-lg font-black text-black">
+              <span className="text-sm sm:text-base font-black text-black">
                 {isAr ? user.currency : user.currencyEn}
               </span>
             </>
           ) : (
-            <span className="text-4xl sm:text-5xl font-black tracking-widest text-black">
+            <span className="text-3xl sm:text-4xl font-black tracking-widest text-black">
               ••••••••
             </span>
           )}
         </div>
 
         {/* User Account ID Pill */}
-        <div className="mt-3 pt-3 border-t border-black/20 flex items-center justify-between text-xs font-bold text-black/80">
+        <div className="mt-2.5 pt-2.5 border-t border-black/20 flex items-center justify-between text-xs font-bold text-black/80">
           <div className="flex items-center gap-1.5">
-            <span className="font-bold">{isAr ? 'حساب ساهل:' : 'SAHEL Account:'}</span>
+            <span className="font-bold">{isAr ? 'حساب ساهل:' : 'Account:'}</span>
             <span className="font-mono font-black text-black">{user.accountNumber}</span>
           </div>
-          <span className="text-[11px] bg-black text-amber-400 px-2 py-0.5 rounded-md font-bold">
-            {isAr ? 'حساب نشط' : 'Active'}
+          <span className="text-[10px] bg-black text-amber-400 px-2 py-0.5 rounded-md font-bold">
+            {isAr ? 'حساب موثق' : 'Verified'}
           </span>
         </div>
       </section>
 
       {/* 2. THE FOUR LARGE PRIMARY ACTIONS */}
       <section>
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
           {/* Action 1: Send Money (إرسال الأموال) */}
           <button
             type="button"
             onClick={() => onOpenAction('send')}
-            className="flex flex-col items-center justify-center p-6 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[140px] text-center group"
+            className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[115px] sm:min-h-[135px] text-center group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2.5 shadow-xs group-hover:scale-105 transition-transform border border-black">
-              <Send className="w-7 h-7 text-amber-400" />
+            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform border border-black">
+              <Send className="w-6 h-6 text-amber-400" />
             </div>
-            <span className="text-base sm:text-lg font-black text-black leading-tight">
+            <span className="text-sm sm:text-base font-black text-black leading-tight">
               {isAr ? 'إرسال الأموال' : 'Send Money'}
             </span>
           </button>
@@ -167,12 +167,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             type="button"
             onClick={() => onOpenAction('receive')}
-            className="flex flex-col items-center justify-center p-6 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[140px] text-center group"
+            className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[115px] sm:min-h-[135px] text-center group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2.5 shadow-xs group-hover:scale-105 transition-transform border border-black">
-              <ArrowDownLeft className="w-7 h-7 text-amber-400" />
+            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform border border-black">
+              <ArrowDownLeft className="w-6 h-6 text-amber-400" />
             </div>
-            <span className="text-base sm:text-lg font-black text-black leading-tight">
+            <span className="text-sm sm:text-base font-black text-black leading-tight">
               {isAr ? 'استلام الأموال' : 'Receive Money'}
             </span>
           </button>
@@ -181,12 +181,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             type="button"
             onClick={() => onOpenAction('recharge')}
-            className="flex flex-col items-center justify-center p-6 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[140px] text-center group"
+            className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[115px] sm:min-h-[135px] text-center group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2.5 shadow-xs group-hover:scale-105 transition-transform border border-black">
-              <Smartphone className="w-7 h-7 text-amber-400" />
+            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform border border-black">
+              <Smartphone className="w-6 h-6 text-amber-400" />
             </div>
-            <span className="text-base sm:text-lg font-black text-black leading-tight">
+            <span className="text-sm sm:text-base font-black text-black leading-tight">
               {isAr ? 'شحن الرصيد' : 'Mobile Recharge'}
             </span>
           </button>
@@ -195,12 +195,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             type="button"
             onClick={() => onOpenAction('bills')}
-            className="flex flex-col items-center justify-center p-6 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[140px] text-center group"
+            className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-amber-300 border-2 border-black hover:bg-amber-200 active:scale-[0.98] transition-all cursor-pointer shadow-sm min-h-[115px] sm:min-h-[135px] text-center group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2.5 shadow-xs group-hover:scale-105 transition-transform border border-black">
-              <Receipt className="w-7 h-7 text-amber-400" />
+            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-black text-amber-400 flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform border border-black">
+              <Receipt className="w-6 h-6 text-amber-400" />
             </div>
-            <span className="text-base sm:text-lg font-black text-black leading-tight">
+            <span className="text-sm sm:text-base font-black text-black leading-tight">
               {isAr ? 'دفع الفواتير' : 'Pay Bills'}
             </span>
           </button>
